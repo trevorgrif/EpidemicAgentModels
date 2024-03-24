@@ -1,7 +1,7 @@
 using EpidemicAgentModels, Test, Agents
 
 @testset "Full Pipeline Test" begin
-    @testset let model = populate(joinpath("..","deps","data","towns","small","population.csv"), joinpath("..","deps","data","towns","small","businesses.csv"))
+    @testset let model = populate("small")
         # Intialize the model
         @test isa(model, Agents.AgentBasedModel)
         @test !isnothing(simulate!(model, duration = 6))
@@ -21,7 +21,7 @@ using EpidemicAgentModels, Test, Agents
 end
 
 @testset "Distributions Test" begin 
-    @testset let model = populate(joinpath("..","deps","data","towns","small","population.csv"), joinpath("..","deps","data","towns","small","businesses.csv"))
+    @testset let model = populate("small")
         # Sample the population with both distribution methods
         @test !isnothing(simulate!(model, duration = 6))
         population = model.init_pop_size

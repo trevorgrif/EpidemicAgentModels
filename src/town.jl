@@ -124,11 +124,8 @@ function _populate(household_file_path::String, business_file_path::String;
     )
 
     # Intiating model construction
-    if !isempty(Retirees)
-        model = ABM(Union{Child,Adult,Retiree}, space; properties=properties, warn=false)
-    else
-        model = ABM(Union{Child,Adult},space; properties = properties, warn=false)
-    end
+    model = ABM(Agent, space; model_step!, properties=properties, warn=false)
+
 
     # Create Agents from Town data
     id = 0
@@ -147,15 +144,15 @@ function _populate(household_file_path::String, business_file_path::String;
         global_mask_threshold = rand(Uniform(βrange...))
         local_mask_threshold = rand(Uniform(βrange...))
         agent = Child(id, house, age, sex, house, community_gathering, school, :S, 0.0, β, zeros(size(Town)[1]), false, zeros(3), false, global_mask_threshold, local_mask_threshold, 0)
-        add_agent_pos!(agent,model)
+        add_agent_own_pos!(agent,model)
     end
     for adult in eachrow(Adults)
         id += 1
         age=adult.age
         sex = Symbol(adult.sex)
         house = adult.house
-        work = collect(filter_vertices(model.space.graph, jobs_open)) |> rand
-        set_prop!(model.space.graph, work, :Employees, get_prop(model.space.graph, work,:Employees)+1)
+        work = collect(filter_vertices(abmspace(model).graph, jobs_open)) |> rand
+        set_prop!(abmspace(model).graph, work, :Employees, get_prop(abmspace(model).graph, work,:Employees)+1)
         community_gathering = get_prop(town_structure, house, :Community_Gathering)
         income = 10000 #Placeholder for now, unused
         shift = rand(model.shifts)
@@ -163,7 +160,7 @@ function _populate(household_file_path::String, business_file_path::String;
         global_mask_threshold = rand(Uniform(βrange...))
         local_mask_threshold = rand(Uniform(βrange...))
         agent = Adult(id, house, age, sex, house, work, community_gathering, income, shift, :S, 0.0, β, zeros(size(Town)[1]), false, zeros(3), false, global_mask_threshold, local_mask_threshold, 0)
-        add_agent_pos!(agent,model)
+        add_agent_own_pos!(agent,model)
     end
     for geezer in eachrow(Retirees)
         id+= 1
@@ -176,7 +173,7 @@ function _populate(household_file_path::String, business_file_path::String;
         global_mask_threshold = rand(Uniform(βrange...))
         local_mask_threshold = rand(Uniform(βrange...))
         agent = Retiree(id, house, age, sex, house, community_gathering, income, :S, 0.0, β, zeros(size(Town)[1]), false, zeros(3), false, global_mask_threshold, local_mask_threshold, 0)
-        add_agent_pos!(agent,model)
+        add_agent_own_pos!(agent,model)
     end
 
     # Collected Town Sturcture Data
@@ -184,8 +181,8 @@ function _populate(household_file_path::String, business_file_path::String;
     NumEmptyBusinesses = 0
     businessID = 1
     for shop in businesses
-        numEmployed = get_prop(model.space.graph, shop, :Employees)
-        bussType = get_prop(model.space.graph, shop, :business_type)
+        numEmployed = get_prop(abmspace(model).graph, shop, :Employees)
+        bussType = get_prop(abmspace(model).graph, shop, :business_type)
         if(numEmployed == 0)
             NumEmptyBusinesses += 0
         end

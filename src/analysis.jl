@@ -52,7 +52,7 @@ end
 
 function _parse_to_daily!(AgentData)
     day_data = AgentData[1:12:end, :]
-    select!(day_data,:step => (x -> x/12), :count_symptomatic, :count_recovered, :count_pop_size)
-    rename!(day_data, Dict(:step_function => "Day", :count_symptomatic => "Symptomatic", :count_recovered => "Recovered", :count_pop_size => "Population"))
+    select!(day_data,:time => (x -> x/12), :count_symptomatic, :count_recovered, :count_pop_size)
+    rename!(day_data, Dict(:time_function => "Day", :count_symptomatic => "Symptomatic", :count_recovered => "Recovered", :count_pop_size => "Population"))
     return day_data
 end

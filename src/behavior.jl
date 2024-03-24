@@ -8,6 +8,21 @@ After all agents in agents.scheduler have been activated,
 model_step! is called.
 ============================================================#
 
+# Dispatch based on agent type
+function agent_step_decide!(agent, model)
+    kind = kindof(agent)
+    kind == :Adult && return adult_step_decide!(agent, model)
+    kind == :Child && return child_step_decide!(agent, model)
+    kind == :Retiree && return retiree_step_decide!(agent, model)
+end
+
+function agent_step_reset!(agent, model)
+    kind = kindof(agent)
+    kind == :Adult && return adult_step_reset!(agent, model)
+    kind == :Child && return child_step_reset!(agent, model)
+    kind == :Retiree && return retiree_step_reset!(agent, model)
+end
+
 #============================================================
 On weekends, adults take any of the following actions:
     Community_Gathering
@@ -22,11 +37,11 @@ and take any of the following actions:
     Nothing
 Lastly, infection parameters and statistics are updated
 ============================================================#
-function agent_step_decide!(adult::Adult, model)
+function adult_step_decide!(adult, model)
     # Weekday
     if mod(model.day,6) != 0
         # If at home then spin home paramters, otherwise spin work parameters
-        if get_prop(model.space.graph,adult.pos,:Type) == :House
+        if get_prop(abmspace(model).graph,adult.pos,:Type) == :House
             adult.next_action = spin(model.behavior_parameters.Adult_House_Distribution)
         else
             adult.next_action = spin(model.behavior_parameters.Adult_Work_Distribution)
@@ -59,7 +74,7 @@ On weekdays, retirees take any of the following actions:
     Nothing
 Lastly, infection parameters and statistics are updated
 ============================================================#
-function agent_step_decide!(retiree::Retiree, model)
+function retiree_step_decide!(retiree, model)
     # Weekday
     if mod(model.day,6) != 0
         retiree.next_action = spin(model.behavior_parameters.Retiree_day_Distribution)
@@ -88,14 +103,14 @@ children attend school and take any of the following actions:
     Nothing
 Lastly, infection parameters and statistics are updated
 ============================================================#
-function agent_step_decide!(child::Child, model)
+function child_step_decide!(child, model)
     # Weekday
     if mod(model.day,6) != 0
         # Move child to school if school hours apply
         #9 ≥ model.time ≥ 3 ? move_agent!(child, child.school, model) : move_agent!(child, child.home, model)
 
         # If at home spin home parameters, otherwise, spin school parameters
-        if get_prop(model.space.graph, child.pos,:Type) == :House
+        if get_prop(abmspace(model).graph, child.pos,:Type) == :House
             child.next_action = spin(model.behavior_parameters.Child_House_Distribution)
         else
             child.next_action = spin(model.behavior_parameters.Child_School_Distribution)
@@ -118,7 +133,7 @@ function agent_step_decide!(child::Child, model)
     return
 end
 
-function agent_step_reset!(adult::Adult, model)
+function adult_step_reset!(adult, model)
     # Weekday
     if mod(model.day,6) != 0
         # Move agents to home or work depending on assigned shift
@@ -138,7 +153,7 @@ function agent_step_reset!(adult::Adult, model)
     return
 end
 
-function agent_step_reset!(retiree::Retiree, model)
+function retiree_step_reset!(retiree, model)
     # Weekday
     if mod(model.day,6) != 0
         move_agent!(retiree, retiree.home, model)
@@ -157,7 +172,7 @@ function agent_step_reset!(retiree::Retiree, model)
     return
 end
 
-function agent_step_reset!(child::Child, model)
+function child_step_reset!(child, model)
     # Weekday
     if mod(model.day,6) != 0
         # Move child to school if school hours apply
@@ -193,24 +208,23 @@ Update hourly parameters
 ============================================================#
 function model_step!(model)
     # Update agent attributes
-    for id in collect(model.scheduler(model))
-        agent = model[id]
+    for agent in allagents(model)
         agent.next_action = 0
         agent.status == :I && update_agent_infection!(agent, model)
     end
 
     # Move agent to default location for the hour
-    for id in model.scheduler(model)
-        agent_step_reset!(model[id], model)
+    for agent in allagents(model)
+        agent_step_reset!(agent, model)
     end
 
     # Update agents positions and `next_action`
-    for id in collect(model.scheduler(model))
-        agent_step_decide!(model[id], model)
+    for agent in allagents(model)
+        agent_step_decide!(agent, model)
     end
 
-    for id in model.scheduler(model)
-        agent_step_interact!(model[id], model)
+    for agent in allagents(model)
+        agent_step_interact!(agent, model)
     end
 
     # Model Timer
@@ -243,10 +257,15 @@ function Get_Agent_Extraction_Data_Bridge(model, agentid)
         )
     end
     # Otherwise call Get_Agent_Extraction_Data
-    return Get_Agent_Extraction_Data(model, getindex(model, agentid))
+    agent = getindex(model, agentid)
+    kind = kindof(agent)
+    kind == :Adult && return Get_Adult_Extraction_Data(model, agent)
+    kind == :Child && return Get_Child_Extraction_Data(model, agent)
+    kind == :Retiree && return Get_Retiree_Extraction_Data(model, agent)
+    return Get_Agent_Extraction_Data(model, agent)
 end
 
-function Get_Agent_Extraction_Data(model, agent::Child)
+function Get_Child_Extraction_Data(model, agent)
     return agent_extraction_data(
         agent.id,
         agent.will_mask,
@@ -257,7 +276,7 @@ function Get_Agent_Extraction_Data(model, agent::Child)
         )
 end
 
-function Get_Agent_Extraction_Data(model, agent::Adult)
+function Get_Adult_Extraction_Data(model, agent)
     return agent_extraction_data(
         agent.id,
         agent.will_mask,
@@ -268,7 +287,7 @@ function Get_Agent_Extraction_Data(model, agent::Adult)
         )
 end
 
-function Get_Agent_Extraction_Data(model, agent::Retiree)
+function Get_Retiree_Extraction_Data(model, agent)
     return agent_extraction_data(
         agent.id,
         agent.will_mask,
@@ -330,7 +349,7 @@ of similar age
 function socialize_global!(agent, model)
     agent.masked = agent.will_mask[1]
     # Grab a friend
-    friend = random_agent(model, x-> abs(x.age.-agent.age) < model.age_parameters.FRIEND_RADII_DICT[typeof(agent)])
+    friend = random_agent(model, x-> abs(x.age.-agent.age) < model.age_parameters.FRIEND_RADII_DICT[kindof(agent)])
     isnothing(friend) && return true
     friend.id == agent.id && return true
 
@@ -361,7 +380,7 @@ function go_shopping!(agent,model)
     interact!(agent, model[friend_id], model)
 
     # Move agent back to original location if business is not public facing
-    if  get_prop(model.space.graph,loc,:business_type)[1] != 1
+    if  get_prop(abmspace(model).graph,loc,:business_type)[1] != 1
         move_agent!(agent, original_location, model)
     end
     return true
@@ -427,7 +446,7 @@ function _infect!(n::Int64, model::AgentBasedModel)
 end
 
 function infect!(agent, contact, model)
-    rand(model.rng) > model.disease_parameters.γ(contact.time_infected)*contact.β*4.0^(-contact.masked) && return
+    rand(abmrng(model)) > model.disease_parameters.γ(contact.time_infected)*contact.β*4.0^(-contact.masked) && return
     agent.status = :I
     push!(model.TransmissionNetwork, [agent.id, contact.id, model.time+12*model.day])
 end
@@ -436,14 +455,14 @@ function recover_or_die!(agent, model)
     # Recover
     if agent.time_infected ≥ model.disease_parameters.Infectious_period
         agent.status = :R
-        agent.time_infected = 0
+        agent.time_infected = 0//12
         return
     end
 
     # Die 
-    if rand(model.rng) < get_IFR(agent.age)*model.disease_parameters.γ(agent.time_infected)/(model.disease_parameters.Infectious_period*12)
+    if rand(abmrng(model)) < get_IFR(agent.age)*model.disease_parameters.γ(agent.time_infected)/(model.disease_parameters.Infectious_period*12)
         push!(model.DeadAgents,[agent.id,agent.home,agent.contact_list])
-        kill_agent!(agent, model)
+        remove_agent_from_space!(agent, model)
         return
     end
 end
@@ -462,8 +481,8 @@ function interact!(agent, contact, model)
     ## Infection dynamics
     count(a.status == :I for a in (agent,contact)) != 1 && return
     infected, healthy = agent.status == :I ? (agent,contact) : (contact,agent)
-    healthy.status in [:R] && rand(model.rng) > model.disease_parameters.rp && return
-    healthy.status in [:V] && rand(model.rng) > model.disease_parameters.vrp && return
+    healthy.status in [:R] && rand(abmrng(model)) > model.disease_parameters.rp && return
+    healthy.status in [:V] && rand(abmrng(model)) > model.disease_parameters.vrp && return
     infect!(healthy,infected,model)
     nothing
 end
@@ -475,7 +494,7 @@ end
 Returns the children of an agent
 ============================================================#
 function get_children(agent,model)
-    filter(x -> typeof(x) == Child, collect(agents_in_position(agent.pos, model)))
+    filter(x -> kindof(x) == :Child, collect(agents_in_position(agent.pos, model)))
 end
 
 #============================================================

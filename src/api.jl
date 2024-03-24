@@ -8,7 +8,15 @@ The model generated is returned alongside three dataframes describing the town s
      businessStructureDF: employee data aggregated by business
      houseStructureDF: agent household assignments
 """
-function populate(population, business)
+function populate(town_type::String)
+    @assert town_type in ["small", "large"]
+
+    if town_type == "small"
+        population, business = joinpath("..","deps","data","towns","small","population.csv"), joinpath("..","deps","data","towns","small","businesses.csv")
+    elseif town_type == "large"
+        population, business = joinpath("..","deps","data","towns","large","population.csv"), joinpath("..","deps","data","towns","large","businesses.csv")
+    end
+    
     _populate(population, business)
 end
 
@@ -32,9 +40,9 @@ function simulate!(model::AgentBasedModel; duration::Int=0)
 
     # Run the model and extract model data
     if duration == 0
-        data, mdata = run!(model, dummystep, model_step!, hazard; adata=adata, mdata=[:day])
+        data, mdata = run!(model, hazard; adata=adata, mdata=[:day])
     else
-        data, mdata = run!(model, dummystep, model_step!, 12 * duration; adata=adata, mdata=[:day])
+        data, mdata = run!(model, 12 * duration; adata=adata, mdata=[:day])
     end
 
     model.epidemic_statistics = analyze(model, data)
@@ -192,7 +200,7 @@ end
 
 Serialize the model to a base64 encoded string.
 """
-function serialize(model)
+function serialize(model::AgentBasedModel)
     base64encode(serialize, model)
 end
 
@@ -203,4 +211,186 @@ Deserialize a model from a base64 encoded string.
 """
 function deserialize(model)
     deserialize(IOBuffer(base64decode(model)))
+end
+
+"""
+    adjacency(model)
+
+Get the adjacency matrix of the model.
+"""
+function adjacency(model::AgentBasedModel)
+    get_adjacency_matrix(model)
+end
+
+"""
+    adjacency_household(model)
+
+Get the adjacency matrix of the model's households.
+"""
+function adjacency_household(model::AgentBasedModel)
+    Household_Adjacency(model)
+end
+
+"""
+    compact_adjacency(model)
+
+Get the compact adjacency matrix of the model.
+"""
+function transmission(model::AgentBasedModel)
+    model.TransmissionNetwork
+end
+
+"""
+    todaily!(AgentData)
+
+Convert the agent data to daily data.
+"""
+function todaily!(AgentData)
+    parse_to_daily!(AgentData)
+end
+
+"""
+    adjacency_decompact(filename)
+
+Decompress the upper half of an adjacency matrix from a file.
+"""
+function adjacency_decompact(filename::String)
+    decompact_adjacency_matrix(filename)
+end
+
+"""
+    adjacency_compact(model)
+
+Get the upper half of the adjacency matrix.
+"""
+function adjacency_compact(model::AgentBasedModel)
+    get_adjacency_matrix_upper(model)
+end
+
+"""
+    epidemicdata(model, AgentData)
+
+Get the epidemic data from the agent data.
+"""
+function epidemicdata(model::AgentBasedModel, AgentData)
+    get_epidemic_data(model, AgentData)
+end
+
+"""
+    spawnworker(inputChannel, outputChannel, duration)
+
+Spawn a worker to run the model.
+"""
+function spawnworker(inputChannel, outputChannel, duration)
+    symptomatic(x) = x.status == :I
+    recovered(x) = x.status == :R
+    pop_size(x) = x.id != 0
+    while true
+        model, task = take!(inputChannel)
+
+        # If task is an 
+        if task == "Build Network"
+            # Set epidemiological data
+            adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+
+            # Run the model and extract model data
+            data, mdata = run!(model, 12*duration; adata = adata, mdata = [:day])
+
+            model.epidemic_statistics = epidemicdata(model, data)
+            model.epidemic_data_daily = todaily!(data)
+
+            # Put results in output Channels
+            put!(outputChannel, (model, "Network Level"))
+        elseif task == "Run Epidemic"
+            infect!(model, 1)
+
+            # Set epidemiological data
+            adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+
+            # Run the model and extract model data
+            data, mdata = run!(model, hazard; adata = adata, mdata = [:day])
+
+            model.epidemic_statistics = epidemicdata(model, data)
+            model.epidemic_data_daily = todaily!(data)
+
+            # Put results in output Channels
+            put!(outputChannel, (model, "Epidemic Level"))
+        elseif task[1:14] == "Apply Behavior" 
+            words = split(task, " ")
+            model.mask_portion = parse(Int, words[3])
+            model.vax_portion = parse(Int, words[4])
+
+             # Apply masking
+            if model.mask_distribution_type == "Random"
+                mask_id_arr = sample(model, model.mask_portion/100, CONDITIONS = [(x)->x.age >= 2])
+            elseif model.mask_distribution_type == "Watts"
+                mask_id_arr = sample(model, model.mask_portion/100, mode="Watts")
+            end
+            behave!(model, mask_id_arr, :will_mask, [true, true, true])
+
+            # Apply vaccinations
+            if model.vax_distribution_type == "Random"
+                vaccinated_id_arr = sample(model, model.vax_portion/100, CONDITIONS = [(x)-> x.age > 4 && x.age < 18, (x)->x.age >= 18], DISTRIBUTION = [0.34, 0.66])
+            elseif model.vax_distribution_type == "Watts"
+                vaccinated_id_arr = sample(model, model.vax_portion/100, mode="Watts")
+            end
+            behave!(model, vaccinated_id_arr, :status, :V)
+            behave!(model, vaccinated_id_arr, :vaccinated, true)
+
+            put!(outputChannel, (model, "Behavior Level"))
+        end
+        model = 0
+        task = 0 
+    end
+end
+
+"""
+    runbatch!(models; duration)
+
+Run a batch of models and return the data and model data.
+"""
+function runbatch!(models; duration = 0)
+    # Set epidemiological
+    symptomatic(x) = x.status == :I
+    recovered(x) = x.status == :R
+    pop_size(x) = x.id != 0
+    adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+
+    # Run the model and extract model data
+    if duration == 0
+        data, mdata = ensemblerun!(models, hazard; adata= adata, mdata = [:day])
+    else
+        data, mdata = ensemblerun!(models, 12*duration; adata= adata, mdata = [:day])
+    end
+
+    return data, mdata
+end
+
+"""
+    runremote!(inputModelChannel, outputModelChannel; duration)
+
+Take a model from a remote channel and run it.
+"""
+function runremote!(inputModelChannel, outputModelChannel; duration = 0)
+    # Take model from remote Channel
+    model = take!(inputModelChannel)
+
+    # Set epidemiological data
+    symptomatic(x) = x.status == :I
+    recovered(x) = x.status == :R
+    pop_size(x) = x.id != 0
+    adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+
+    # Run the model and extract model data
+    if duration == 0
+        data, mdata = run!(model, hazard; adata = adata, mdata = [:day])
+    else
+        data, mdata = run!(model, 12*duration; adata = adata, mdata = [:day])
+    end
+
+    model.epidemic_statistics = epidemicdata(model, data)
+    model.epidemic_data_daily = todaily!(data)
+
+    # Put results in output Channels
+    put!(outputModelChannel, model)
 end

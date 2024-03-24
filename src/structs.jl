@@ -2,67 +2,63 @@
 --------------------- Agent Structures ----------------------
 ============================================================#
 
-mutable struct Adult <: AbstractAgent
-    id::Int64
-    pos::Int64
-    age::Int64
-    sex::Symbol
-    home::Int64
-    work::Int64
-    community_gathering::Int64
-    income::Int64
-    shift::Tuple{Int64,Int64}
-    status::Symbol
-    time_infected::Rational{Int64}
-    β::Float64
-    contact_list::Vector{Float64}
-    masked::Bool
-    will_mask::Vector{Bool} #{global,local,social}
-    vaccinated::Bool
-    global_mask_threshold::Float64
-    local_mask_threshold::Float64
-    next_action::Int64
+@multiagent :opt_speed struct Agent(GraphAgent{3})
+    @subagent struct Adult
+        age::Int64
+        sex::Symbol
+        home::Int64
+        work::Int64
+        community_gathering::Int64
+        income::Int64
+        shift::Tuple{Int64,Int64}
+        status::Symbol
+        time_infected::Rational{Int64}
+        β::Float64
+        contact_list::Vector{Float64}
+        masked::Bool
+        will_mask::Vector{Bool} #{global,local,social}
+        vaccinated::Bool
+        global_mask_threshold::Float64
+        local_mask_threshold::Float64
+        next_action::Int64
+    end
+    @subagent struct Child
+        age::Int64
+        sex::Symbol
+        home::Int64
+        community_gathering::Int64
+        school::Int64
+        status::Symbol
+        time_infected::Rational{Int64}
+        β::Float64
+        contact_list::Vector{Float64}
+        masked::Bool
+        will_mask::Vector{Bool} #{global,local,social}
+        vaccinated::Bool
+        global_threshold::Float64
+        local_threshold::Float64
+        next_action::Int64
+    end
+    @subagent struct Retiree 
+        age::Int64
+        sex::Symbol
+        home::Int64
+        community_gathering::Int64
+        income::Int64
+        status::Symbol
+        time_infected::Rational{Int64}
+        β::Float64
+        contact_list::Vector{Float64}
+        masked::Bool
+        will_mask::Vector{Bool} #{gloabl,local,social}
+        vaccinated::Bool
+        global_threshold::Float64
+        local_threshold::Float64
+        next_action::Int64
+    end
 end
 
-mutable struct Child <: AbstractAgent
-    id::Int64
-    pos::Int64
-    age::Int64
-    sex::Symbol
-    home::Int64
-    community_gathering::Int64
-    school::Int64
-    status::Symbol
-    time_infected::Rational{Int64}
-    β::Float64
-    contact_list::Vector{Float64}
-    masked::Bool
-    will_mask::Vector{Bool} #{global,local,social}
-    vaccinated::Bool
-    global_threshold::Float64
-    local_threshold::Float64
-    next_action::Int64
-end
 
-mutable struct Retiree <: AbstractAgent
-    id::Int64
-    pos::Int64
-    age::Int64
-    sex::Symbol
-    home::Int64
-    community_gathering::Int64
-    income::Int64
-    status::Symbol
-    time_infected::Rational{Int64}
-    β::Float64
-    contact_list::Vector{Float64}
-    masked::Bool
-    will_mask::Vector{Bool} #{gloabl,local,social}
-    vaccinated::Bool
-    global_threshold::Float64
-    local_threshold::Float64
-    next_action::Int64
-end
 
 mutable struct agent_extraction_data
     id::Int64
@@ -127,10 +123,10 @@ end
     # Age ranges [5-17, 17+]
     vax_distribution_proportions::Vector{Float64} = [0.34, 0.66]
 
-    FRIEND_RADII_DICT::Dict{DataType, Int64} = Dict{DataType, Int}(
-        Adult => 10,
-        Child => 5,
-        Retiree => 20
+    FRIEND_RADII_DICT::Dict{Symbol, Int64} = Dict{Symbol, Int}(
+        :Adult => 10,
+        :Child => 5,
+        :Retiree => 20
     )
 end
 
