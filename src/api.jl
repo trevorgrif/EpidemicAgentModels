@@ -201,7 +201,7 @@ end
 Serialize the model to a base64 encoded string.
 """
 function serialize(model::AgentBasedModel)
-    base64encode(serialize, model)
+    base64encode(Serialization.serialize, model)
 end
 
 """
@@ -210,7 +210,7 @@ end
 Deserialize a model from a base64 encoded string.
 """
 function deserialize(model)
-    deserialize(IOBuffer(base64decode(model)))
+    Serialization.deserialize(IOBuffer(base64decode(model)))
 end
 
 """

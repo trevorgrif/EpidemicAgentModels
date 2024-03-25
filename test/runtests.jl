@@ -20,8 +20,9 @@ using EpidemicAgentModels, Test, Agents
     end
 end
 
-@testset "Distributions Test" begin 
-    @testset let model = populate("small")
+@testset "General Test" begin
+    model = populate("small")
+    @testset "Distributions Test" begin
         # Sample the population with both distribution methods
         @test !isnothing(simulate!(model, duration = 6))
         population = model.init_pop_size
@@ -31,5 +32,10 @@ end
         @test isa(wattsSample, Vector{Int64})
         @test (length(randomSample) - (0.2 * population)) < (0.01 * population)
         @test (length(wattsSample) - (0.2 * population)) < (0.01 * population)
+    end
+    @testset "Serialization Test" begin
+        # Sample the population with both distribution methods
+        @test isa(serialize(model), String)
+        @test isa(deserialize(serialize(model)), Agents.AgentBasedModel)
     end
 end
