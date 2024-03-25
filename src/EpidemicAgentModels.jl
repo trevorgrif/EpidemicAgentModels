@@ -37,9 +37,9 @@ using Random, Distributions
 using Agents
 using Graphs, MetaGraphs
 using SparseArrays
+using Serialization, Base64
 # using JLD, XLSX
 # using StatsBase, StatsPlots
-# using Serialization, Base64
 # using PlotlyJS, Printf, Plots
 # using LinearAlgebra
 # using Ripserer
