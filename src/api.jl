@@ -12,9 +12,9 @@ function populate(town_type::String)
     @assert town_type in ["small", "large"]
 
     if town_type == "small"
-        population, business = joinpath("..","deps","data","towns","small","population.csv"), joinpath("..","deps","data","towns","small","businesses.csv")
+        population, business = joinpath(@__DIR__, "..","deps","data","towns","small","population.csv"), joinpath(@__DIR__, "..","deps","data","towns","small","businesses.csv")
     elseif town_type == "large"
-        population, business = joinpath("..","deps","data","towns","large","population.csv"), joinpath("..","deps","data","towns","large","businesses.csv")
+        population, business = joinpath(@__DIR__, "..","deps","data","towns","large","population.csv"), joinpath(@__DIR__, "..","deps","data","towns","large","businesses.csv")
     end
     
     _populate(population, business)
