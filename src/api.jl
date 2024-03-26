@@ -75,6 +75,7 @@ Infect n agents in the model. If no susceptible agents exist, return false. Othe
 """
 function infect!(model::AgentBasedModel, n::Int64)
     _infect!(n, model)
+    return model
 end
 
 """
