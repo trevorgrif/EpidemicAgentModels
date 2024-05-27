@@ -12,7 +12,8 @@ using EpidemicAgentModels, Test, Agents
         @test isa(vaccinate!(model, 20, "Watts"), Agents.AgentBasedModel)
 
         # Infect the model and test heal
-        @test size(infect!(model, 2))[1] == 2
+        @test isa(infect!(model, 2), Agents.AgentBasedModel)
+        @test length(filter(x -> x.status == :I, collect(allagents(model)))) == 2
 
         # Run with epidemic
         @test !isnothing(simulate!(model))
