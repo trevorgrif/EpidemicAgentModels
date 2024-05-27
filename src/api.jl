@@ -395,3 +395,12 @@ function runremote!(inputModelChannel, outputModelChannel; duration = 0)
     # Put results in output Channels
     put!(outputModelChannel, model)
 end
+
+"""
+    tune!(model, params)
+
+Tune the model with the given parameters.
+"""
+function tune!(model::AgentBasedModel, params::DiseaseParameters)
+    model.disease_parameters = params
+end

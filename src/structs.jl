@@ -99,16 +99,27 @@ end
     Retiree_CommGath_Distribution::Multinomial{Float64, Vector{Float64}} = Multinomial(1, Retiree_Community_Gathering)
 end
 
-@kwdef mutable struct DiseaseParameters
+"""
+    DiseaseParameters(...kwargs)
+
     βrange::Tuple{Float64,Float64} = (0.5, 0.8)
-    rp::Float64 = 0.0 #re-infection probability
-    vip::Float64 = 0.15 #vaccine infection probability
+    rp::Float64 = 0.0 # re-infection probability
+    vip::Float64 = 0.15 # vaccine infection probability
     infectious_period::Int64 = 10 
 
-    # An alternative to the gamma distribution is this rational function used by Phan et. al (https://doi.org/10.1016/j.scitotenv.2022.159326)
-    # The first parameter acts as a method to modify the magnitude of the function, and therefore the height of the peak
-    # The second parameter determines the location of the peak.
-    # We can ignore the incubation period
+    # Parameters controlling the rational function for infectivitiy used by Phan et. al (https://doi.org/10.1016/j.scitotenv.2022.159326)
+    # The first parameter modifies the height of the peak
+    # The second parameter determines the location of the peak
+    γ_parameters::Vector{Float64} = [1.0,4.0]
+
+The disease parameters for the model.
+"""
+@kwdef mutable struct DiseaseParameters
+    βrange::Tuple{Float64,Float64} = (0.5, 0.8)
+    rp::Float64 = 0.0 # re-infection probability
+    vip::Float64 = 0.15 # vaccine infection probability
+    infectious_period::Int64 = 10 
+
     γ_parameters::Vector{Float64} = [1.0,4.0]
     γ::Function = t-> γ_parameters[1]*t/(γ_parameters[2]^3 +t^3)
 

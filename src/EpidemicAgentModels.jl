@@ -22,6 +22,8 @@ todaily!, # Get_Daily_Agentdata,
 adjacency_decompact, # Decompact_Adjacency_Matrix,
 adjacency_compact, # Get_Compact_Adjacency_Matrix,
 epidemicdata, # Get_Epidemic_Data,
+DiseaseParameters,
+tune!,
 
 spawnworker, # Spin_Up_Worker,
 runbatch!, # Ensemble_Run_Model!,
@@ -44,8 +46,8 @@ using Serialization, Base64
 # using LinearAlgebra
 # using Ripserer
 
-include("api.jl")
 include("structs.jl")
+include("api.jl")
 include("town.jl")
 include("analysis.jl")
 include("behavior.jl")
