@@ -453,7 +453,7 @@ end
 
 function recover_or_die!(agent, model)
     # Recover
-    if agent.time_infected ≥ model.disease_parameters.Infectious_period
+    if agent.time_infected ≥ model.disease_parameters.infectious_period
         agent.status = :R
         agent.time_infected = 0//12
         return
@@ -482,7 +482,7 @@ function interact!(agent, contact, model)
     count(a.status == :I for a in (agent,contact)) != 1 && return
     infected, healthy = agent.status == :I ? (agent,contact) : (contact,agent)
     healthy.status in [:R] && rand(abmrng(model)) > model.disease_parameters.rp && return
-    healthy.status in [:V] && rand(abmrng(model)) > model.disease_parameters.vrp && return
+    healthy.status in [:V] && rand(abmrng(model)) > model.disease_parameters.vip && return
     infect!(healthy,infected,model)
     nothing
 end

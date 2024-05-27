@@ -100,15 +100,22 @@ end
 end
 
 @kwdef mutable struct DiseaseParameters
-    βrange::Tuple{Float64,Float64} = (0.75,1.1)
+    βrange::Tuple{Float64,Float64} = (0.5, 0.8)
     rp::Float64 = 0.0 #re-infection probability
-    vrp::Float64 = 0.15 #vaccine re-infection probability
-    Infectious_period::Int64 = 20
+    vip::Float64 = 0.15 #vaccine infection probability
+    infectious_period::Int64 = 10 
 
-    # Create gamma distribution pdf that Infectivity follows with time, peak infectivity at day 14 (~0.14 infections probability)
-    γ_parameters::Vector{Float64} = [97.18750, 3.71875,25.625]
-    incubation_period::Float64 = 6.1
-    γ::Function = t -> (Gamma(γ_parameters[1], 1/γ_parameters[2]) |> (x->pdf(x,t+γ_parameters[3]-incubation_period)))
+    # An alternative to the gamma distribution is this rational function used by Phan et. al (https://doi.org/10.1016/j.scitotenv.2022.159326)
+    # The first parameter acts as a method to modify the magnitude of the function, and therefore the height of the peak
+    # The second parameter determines the location of the peak.
+    # We can ignore the incubation period
+    γ_parameters::Vector{Float64} = [1.0,4.0]
+    γ::Function = t-> γ_parameters[1]*t/(γ_parameters[2]^3 +t^3)
+
+    # Create gamma distribution pdf that infectivity follows with time, peak infectivity at day 14 (~0.14 infections probability)
+    # γ_parameters::Vector{Float64} = [97.18750, 3.71875, 25.625]
+    # incubation_period::Float64 = 6.1 # too long 3 days (?)
+    # γ::Function = t -> (Gamma(γ_parameters[1], 1/γ_parameters[2]) |> (x->pdf(x,t+γ_parameters[3]-incubation_period)))
 end
 
 @kwdef mutable struct RiskParameters
