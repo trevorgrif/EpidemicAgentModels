@@ -460,7 +460,7 @@ function recover_or_die!(agent, model)
     end
 
     # Die 
-    if rand(abmrng(model)) < get_IFR(agent.age)*model.disease_parameters.γ(agent.time_infected)/(model.disease_parameters.Infectious_period*12)
+    if rand(abmrng(model)) < get_IFR(agent.age)*model.disease_parameters.γ(agent.time_infected)/(model.disease_parameters.infectious_period*12)
         push!(model.DeadAgents,[agent.id,agent.home,agent.contact_list])
         remove_agent!(agent, model)
         return

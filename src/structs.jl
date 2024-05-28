@@ -115,13 +115,14 @@ end
 The disease parameters for the model.
 """
 @kwdef mutable struct DiseaseParameters
-    βrange::Tuple{Float64,Float64} = (0.5, 0.8)
-    rp::Float64 = 0.0 # re-infection probability
-    vip::Float64 = 0.15 # vaccine infection probability
-    infectious_period::Int64 = 10 
+    βrange::Tuple{Float, Float} = (0.5, 0.8)
+    rp::Float = 0.0 # re-infection probability
+    vip::Float = 0.15 # vaccine infection probability
+    infectious_period::Int = 10 
 
-    γ_parameters::Vector{Float64} = [1.0,4.0]
-    γ::Function = t-> γ_parameters[1]*t/(γ_parameters[2]^3 +t^3)
+    γ_parameters::Vector{Float} = [1.0,4.0]
+    rate_of_decay::Int = 3
+    γ::Function = t-> γ_parameters[1]*t/(γ_parameters[2]^rate_of_decay +t^rate_of_decay)
 
     # Create gamma distribution pdf that infectivity follows with time, peak infectivity at day 14 (~0.14 infections probability)
     # γ_parameters::Vector{Float64} = [97.18750, 3.71875, 25.625]
