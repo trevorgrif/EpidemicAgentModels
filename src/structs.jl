@@ -122,7 +122,7 @@ The disease parameters for the model.
 
     γ_parameters::Vector{Float64} = [1.0,4.0]
     rate_of_decay::Int64 = 3
-    γ::Function = t-> γ_parameters[1]*t/(γ_parameters[2]^rate_of_decay +t^rate_of_decay)
+    γ::Function = t -> γ_parameters[1]*t/(γ_parameters[2]^rate_of_decay +t^rate_of_decay)
 
     # Create gamma distribution pdf that infectivity follows with time, peak infectivity at day 14 (~0.14 infections probability)
     # γ_parameters::Vector{Float64} = [97.18750, 3.71875, 25.625]
@@ -270,6 +270,7 @@ end
     network_id::Int64 = 0
     behavior_id::Int64 = 0
     epidemic_id::Int64 = 0
+    disease_id::Int64 = 0
     
     # Agent Meta-Data
     init_pop_size::Int64 #nAgents
