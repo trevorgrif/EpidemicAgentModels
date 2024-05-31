@@ -118,9 +118,9 @@ The disease parameters for the model.
     βrange::Tuple{Float64, Float64} = (0.5, 0.8)
     rp::Float64 = 0.0 # re-infection probability
     vip::Float64 = 0.15 # vaccine infection probability
-    infectious_period::Int = 10 
+    infectious_period::Int = 12
 
-    γ_parameters::Vector{Float64} = [1.0,4.0]
+    γ_parameters::Vector{Float64} = [1.2,4.0]
     rate_of_decay::Int64 = 3
     γ::Function = t -> γ_parameters[1]*t/(γ_parameters[2]^rate_of_decay +t^rate_of_decay)
 
