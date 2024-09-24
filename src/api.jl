@@ -49,7 +49,6 @@ function simulate!(model::AgentBasedModel; duration::Int=0)
     model.epidemic_data = data
     
     return model
-    end
 end
 
 """
