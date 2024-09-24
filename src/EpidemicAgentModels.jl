@@ -24,6 +24,7 @@ adjacency_compact, # Get_Compact_Adjacency_Matrix,
 epidemicdata, # Get_Epidemic_Data,
 DiseaseParameters,
 tune!,
+simulate_flukeless,
 
 spawnworker, # Spin_Up_Worker,
 runbatch!, # Ensemble_Run_Model!,

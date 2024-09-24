@@ -31,7 +31,39 @@ Keywords
  - `duration`: number of days to run the model for. If 0, the model will run until no agents are infected.
  - `max_retries`: if the number of infected agents after simulating is less than model.fluke_threshold reset the model and simulate again. Default = 0.
 """
-function simulate!(model::AgentBasedModel; duration::Int=0, max_retries::Int64=0)
+function simulate!(model::AgentBasedModel; duration::Int=0)
+    
+    # Set epidemiological data
+    symptomatic(x) = x.status == :I
+    recovered(x) = x.status == :R
+    pop_size(x) = x.id != 0
+    adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+    
+    # Run the model and extract model data
+    if duration == 0
+        data, mdata = run!(model, hazard; adata=adata, mdata=[:day])
+    else
+        data, mdata = run!(model, 12 * duration; adata=adata, mdata=[:day])
+    end
+    model.epidemic_statistics = analyze(model, data)
+    model.epidemic_data = data
+    
+    return model
+    end
+end
+
+"""
+    simulate!(model; kwargs...)
+
+Step the agent based model for either a fixed duration or until no agents are infected. The agent data is analyzed and statistics are stored in modedl.epidemic_statistics.
+
+Keywords
+========
+
+ - `duration`: number of days to run the model for. If 0, the model will run until no agents are infected.
+ - `max_retries`: if the number of infected agents after simulating is less than model.fluke_threshold reset the model and simulate again. Default = 0.
+"""
+function simulate_flukeless(model::AgentBasedModel; duration::Int=0, max_retries::Int64=0)
     
     # Set epidemiological data
     symptomatic(x) = x.status == :I
@@ -54,9 +86,8 @@ function simulate!(model::AgentBasedModel; duration::Int=0, max_retries::Int64=0
         
         # If the simulation was a fluke try again, unless we've tried too many times
         if(numAttempts > max_retries || modelCp.epidemic_statistics.infected_total > modelCp.fluke_threshold)
-            model = modelCp
-            model.simulation_attempts = numAttempts
-            return model
+            modelCp.simulation_attempts = numAttempts
+            return modelCp
         end
         numAttempts += 1
     end
