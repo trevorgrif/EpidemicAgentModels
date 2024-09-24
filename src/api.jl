@@ -29,9 +29,9 @@ Keywords
 ========
 
  - `duration`: number of days to run the model for. If 0, the model will run until no agents are infected.
- - `fluke_settings`: if the number of infected agents after simulating is less than model.fluke_threshold reset the model and simulate again.
+ - `max_retries`: if the number of infected agents after simulating is less than model.fluke_threshold reset the model and simulate again. Default = 0.
 """
-function simulate!(model::AgentBasedModel; duration::Int=0, max_retry::Int64=0)
+function simulate!(model::AgentBasedModel; duration::Int=0, max_retries::Int64=0)
     
     # Set epidemiological data
     symptomatic(x) = x.status == :I
@@ -53,7 +53,7 @@ function simulate!(model::AgentBasedModel; duration::Int=0, max_retry::Int64=0)
         modelCp.epidemic_data = data
         
         # If the simulation was a fluke try again, unless we've tried too many times
-        if(numAttempts > max_retry || modelCp.epidemic_statistics.infected_total > modelCp.fluke_threshold)
+        if(numAttempts > max_retries || modelCp.epidemic_statistics.infected_total > modelCp.fluke_threshold)
             model = modelCp
             model.simulation_attempts = numAttempts
             return model
