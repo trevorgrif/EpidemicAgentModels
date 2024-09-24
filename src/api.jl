@@ -84,7 +84,7 @@ function simulate_flukeless(model::AgentBasedModel; duration::Int=0, max_retries
         modelCp.epidemic_data = data
         
         # If the simulation was a fluke try again, unless we've tried too many times
-        if(numAttempts > max_retries || modelCp.epidemic_statistics.InfectedTotal > modelCp.fluke_threshold)
+        if(numAttempts > max_retries || modelCp.epidemic_statistics.InfectedTotal[1] > modelCp.fluke_threshold)
             modelCp.simulation_attempts = numAttempts
             return modelCp
         end
