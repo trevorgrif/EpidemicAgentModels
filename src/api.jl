@@ -20,7 +20,6 @@ function populate(town_type::String)
     _populate(population, business)
 end
 
-
 """
     simulate!(model; kwargs...)
 
@@ -30,25 +29,37 @@ Keywords
 ========
 
  - `duration`: number of days to run the model for. If 0, the model will run until no agents are infected.
+ - `fluke_settings`: if the number of infected agents after simulating is less than model.fluke_threshold reset the model and simulate again.
 """
-function simulate!(model::AgentBasedModel; duration::Int=0)
+function simulate!(model::AgentBasedModel; duration::Int=0, max_retry::Int64=0)
+    
     # Set epidemiological data
     symptomatic(x) = x.status == :I
     recovered(x) = x.status == :R
     pop_size(x) = x.id != 0
     adata = [(symptomatic, count), (recovered, count), (pop_size, count)]
+    
+    numAttempts = 1
+    while true
+        modelCp = deepcopy(model)
 
-    # Run the model and extract model data
-    if duration == 0
-        data, mdata = run!(model, hazard; adata=adata, mdata=[:day])
-    else
-        data, mdata = run!(model, 12 * duration; adata=adata, mdata=[:day])
+        # Run the model and extract model data
+        if duration == 0
+            data, mdata = run!(modelCp, hazard; adata=adata, mdata=[:day])
+        else
+            data, mdata = run!(modelCp, 12 * duration; adata=adata, mdata=[:day])
+        end
+        modelCp.epidemic_statistics = analyze(modelCp, data)
+        modelCp.epidemic_data = data
+        
+        # If the simulation was a fluke try again, unless we've tried too many times
+        if(numAttempts > max_retry || modelCp.epidemic_statistics.infected_total > modelCp.fluke_threshold)
+            model = modelCp
+            model.simulation_attempts = numAttempts
+            return model
+        end
+        numAttempts += 1
     end
-
-    model.epidemic_statistics = analyze(model, data)
-    model.epidemic_data = data
-
-    return model
 end
 
 

@@ -297,6 +297,8 @@ end
     day::Int64 = 0
 
     # Epidemic Data
+    fluke_threshold::Int64 = 5
+    simulation_attempts::Int64 = 0
     disease_parameters::DiseaseParameters = DiseaseParameters()
     risk_parameters::RiskParameters = RiskParameters()
     TransmissionNetwork::DataFrame = DataFrame(agent = Int64[], infected_by = Int64[], time_infected = Int64[])
